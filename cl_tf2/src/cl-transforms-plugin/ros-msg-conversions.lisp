@@ -62,7 +62,12 @@
   (declare (type geometry_msgs-msg:pose msg))
   (with-fields (position orientation) msg
     (cl-transforms:make-pose
-     (msg->3d-vector position) (msg->quaternion orientation))))
+     (msg->point position) (msg->quaternion orientation))))
+
+(defun msg->point (msg)
+  (declare (type geometry_msgs-msg:point msg))
+  (with-fields (x y z) msg
+    (cl-transforms:make-3d-vector x y z)))
 
 (defun msg->3d-vector (msg)
   (declare (type geometry_msgs-msg:vector3 msg))
@@ -125,3 +130,10 @@
             :x (cl-transforms:x 3d-vector)
             :y (cl-transforms:y 3d-vector)
             :z (cl-transforms:z 3d-vector)))
+
+(defun point->msg (point)
+  (declare (type cl-transforms:point point))
+  (make-msg "geometry_msgs/Point"
+            :x (cl-transforms:x point)
+            :y (cl-transforms:y point)
+            :z (cl-transforms:z point)))
