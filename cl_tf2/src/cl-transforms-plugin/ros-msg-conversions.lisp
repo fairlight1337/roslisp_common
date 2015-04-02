@@ -40,6 +40,13 @@
                    :child-frame-id child_frame_id
                    :transform (msg->transform transform))))
 
+(defun msg->pose-stamped (msg)
+  (declare (type geometry_msgs-msg:posestamped msg))
+  (with-fields (header pose) msg
+    (make-instance 'pose-stamped
+                   :header (msg->header header)
+                   :pose (msg->pose pose))))
+
 (defun msg->header (msg)
   (declare (type std_msgs-msg:Header msg))
   (with-fields (stamp frame_id) msg
@@ -50,6 +57,12 @@
   (with-fields (translation rotation) msg
     (cl-transforms:make-transform
      (msg->3d-vector translation) (msg->quaternion rotation))))
+
+(defun msg->pose (msg)
+  (declare (type geometry_msgs-msg:pose msg))
+  (with-fields (position orientation) msg
+    (cl-transforms:make-pose
+     (msg->3d-vector position) (msg->quaternion orientation))))
 
 (defun msg->3d-vector (msg)
   (declare (type geometry_msgs-msg:vector3 msg))
@@ -73,6 +86,13 @@
    :child_frame_id (child-frame-id transform-stamped)
    :transform (transform->msg (transform transform-stamped))))
 
+(defun pose-stamped->msg (pose-stamped)
+  (declare (type pose-stamped pose-stamped))
+  (make-msg 
+   "geometry_msgs/PoseStamped"
+   :header (header->msg (header pose-stamped))
+   :pose (pose->msg (pose pose-stamped))))
+
 (defun header->msg (header)
   (declare (type header header))
   (make-msg "std_msgs/Header" :stamp (stamp header) :frame_id (frame-id header)))
@@ -83,6 +103,13 @@
    "geometry_msgs/Transform"
    :translation (3d-vector->msg (cl-transforms:translation transform))
    :rotation (quaterion->msg (cl-transforms:rotation transform))))
+
+(defun pose->msg (pose)
+  (declare (type cl-transforms:pose pose))
+  (make-msg
+   "geometry_msgs/Pose"
+   :position (cl-transforms:origin pose)
+   :orientation (cl-transforms:orientation pose)))
 
 (defun quaterion->msg (quaternion)
   (declare (type cl-transforms:quaternion quaternion))
