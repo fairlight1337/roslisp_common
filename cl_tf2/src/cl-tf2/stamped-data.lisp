@@ -80,7 +80,9 @@
          (constructor-symbol (name)
            (intern (concatenate 'string "MAKE-" (symbol-name name))))
          (copy-constructor-symbol (name)
-           (intern (concatenate 'string "COPY-" (symbol-name name)))))
+           (intern (concatenate 'string "COPY-" (symbol-name name))))
+         (copy-constructor-ext-symbol (name)
+           (intern (concatenate 'string "COPY-EXT-" (symbol-name name)))))
     `(progn
        (defclass ,name ()
          ((header :initarg :header :initform (make-instance 'cl-tf2:header)
@@ -91,7 +93,7 @@
                `(,slot-name :initarg ,(to-keyword slot-name) :type ,slot-type
                             :accessor ,slot-name))))
        (defun ,(constructor-symbol name) (,slot-name frame-id stamp)
-         (make-instance 
+         (make-instance
           ',name ,(to-keyword slot-name) ,slot-name 
           :header (cl-tf2:make-header frame-id stamp)))
        (defun ,(copy-constructor-symbol name) (,name &key header ,slot-name)
@@ -99,6 +101,48 @@
            (make-instance ',name
                           :header (or header old-header)
                           ,(to-keyword slot-name) (or ,slot-name old-data))))
+       (defun ,(copy-constructor-ext-symbol name)
+           ,(append `(,name &key)
+             `(,@(loop for slot in (sb-mop:class-slots
+                                    (find-class slot-type))
+                       collect (intern (symbol-name (sb-mop:slot-definition-name slot))))
+               ,@(loop for slot in (sb-mop:class-slots
+                                    (find-class 'cl-tf2:header))
+                       collect (sb-mop:slot-definition-name slot))))
+         ,(concatenate
+           'string
+           "Copies the object given as `" (write-to-string name) "' "
+           "and exposes all of its slots' sub-slots as key parameters. Parameters that are omitted are defaulting to the values in `"
+           (write-to-string name) "'.")
+         (declare
+          ,@(loop for slot in (sb-mop:class-slots
+                               (find-class slot-type))
+                  collect `(type (or symbol ,(sb-mop:slot-definition-type slot))
+                                 ,(intern (symbol-name (sb-mop:slot-definition-name slot)))))
+          ,@(loop for slot in (sb-mop:class-slots
+                               (find-class 'cl-tf2:header))
+                  collect `(type (or symbol ,(sb-mop:slot-definition-type slot))
+                                 ,(intern (symbol-name (sb-mop:slot-definition-name slot))))))
+         (make-instance
+          ',name
+          ,(to-keyword slot-name)
+          (make-instance
+           ',slot-type
+           ,@(loop for slot in (sb-mop:class-slots
+                                (find-class slot-type))
+                   as sub-slot-name = (sb-mop:slot-definition-name slot)
+                   append `(,(to-keyword sub-slot-name)
+                            (or ,(intern (symbol-name sub-slot-name))
+                                (,sub-slot-name (,slot-name ,name))))))
+          ,(to-keyword 'cl-tf2:header)
+          (make-instance
+           'cl-tf2:header
+           ,@(loop for slot in (sb-mop:class-slots
+                                (find-class 'cl-tf2:header))
+                   as slot-name = (sb-mop:slot-definition-name slot)
+                   append `(,(to-keyword slot-name)
+                            (or ,(intern (symbol-name slot-name))
+                                (,slot-name (header ,name))))))))
        (defmethod print-object ((obj ,name) strm)
          (print-unreadable-object (obj strm :type t)
            (with-slots (header ,slot-name) obj
