@@ -71,6 +71,7 @@
    - define a class 'number-stamped' with slots 'num-value' and 'header'
    - define a constructor-function 'make-number-stamped'
    - define a function 'copy-number-stamped'
+   - define a function 'copy-ext-number-stamped'
    - overload the method 'print-object' for 'number-stamped'
    - overload the method 'get-time-stamp' for 'number-stamped'
    - overload the method 'get-frame-id' for 'number-stamped'"
@@ -83,6 +84,10 @@
            (intern (concatenate 'string "COPY-" (symbol-name name))))
          (copy-constructor-ext-symbol (name)
            (intern (concatenate 'string "COPY-EXT-" (symbol-name name)))))
+    (unless (sb-mop:class-finalized-p (find-class slot-type))
+      (sb-mop:finalize-inheritance (find-class slot-type)))
+    (unless (sb-mop:class-finalized-p (find-class 'cl-tf2:header))
+      (sb-mop:finalize-inheritance (find-class 'cl-tf2:header)))
     `(progn
        (defclass ,name ()
          ((header :initarg :header :initform (make-instance 'cl-tf2:header)
@@ -143,6 +148,9 @@
                    append `(,(to-keyword slot-name)
                             (or ,(intern (symbol-name slot-name))
                                 (,slot-name (header ,name))))))))
+       (export ',(constructor-symbol name))
+       (export ',(copy-constructor-symbol name))
+       (export ',(copy-constructor-ext-symbol name))
        (defmethod print-object ((obj ,name) strm)
          (print-unreadable-object (obj strm :type t)
            (with-slots (header ,slot-name) obj
