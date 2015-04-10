@@ -113,10 +113,10 @@
   (declare (type cl-transforms:pose pose))
   (make-msg
    "geometry_msgs/Pose"
-   :position (cl-transforms:origin pose)
-   :orientation (cl-transforms:orientation pose)))
+   :position (point->msg (cl-transforms:origin pose))
+   :orientation (quaternion->msg (cl-transforms:orientation pose))))
 
-(defun quaterion->msg (quaternion)
+(defun quaternion->msg (quaternion)
   (declare (type cl-transforms:quaternion quaternion))
   (make-msg "geometry_msgs/Quaternion"
             :x (cl-transforms:x quaternion)
