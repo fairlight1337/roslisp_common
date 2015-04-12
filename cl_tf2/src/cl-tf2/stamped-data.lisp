@@ -99,9 +99,10 @@
                             :accessor ,slot-name))))
        (defun ,(constructor-symbol name) (,slot-name frame-id stamp)
          (make-instance
-          ',name ,(to-keyword slot-name) ,slot-name 
+          ',name ,(to-keyword slot-name) ,slot-name
           :header (cl-tf2:make-header frame-id stamp)))
        (defun ,(copy-constructor-symbol name) (,name &key header ,slot-name)
+         (declare (type ,name ,name))
          (with-slots ((old-header header) (old-data ,slot-name)) ,name
            (make-instance ',name
                           :header (or header old-header)
@@ -119,6 +120,7 @@
            "Copies the object given as `" (write-to-string name) "' "
            "and exposes all of its slots' sub-slots as key parameters. Parameters that are omitted are defaulting to the values in `"
            (write-to-string name) "'.")
+         (declare (type ,name ,name))
          (declare
           ,@(loop for slot in (sb-mop:class-slots
                                (find-class slot-type))
