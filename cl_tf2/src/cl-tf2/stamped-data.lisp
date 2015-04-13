@@ -70,22 +70,25 @@
  This call will:
    - define a class 'number-stamped' with slots 'num-value' and 'header'
    - define a constructor-function 'make-number-stamped'
+   - define a stamped converter 'number->number-stamped'
    - define a function 'copy-number-stamped'
    - define a function 'copy-ext-number-stamped'
    - overload the method 'print-object' for 'number-stamped'
    - overload the method 'get-time-stamp' for 'number-stamped'
    - overload the method 'get-frame-id' for 'number-stamped'"
 
-  (flet ((to-keyword (sym)
-           (intern (string sym) 'keyword))
-         (combine-symbols (symbols)
-           (intern (format nil "~{~a~}" symbols)))
-         (constructor-symbol (name)
-           (intern (concatenate 'string "MAKE-" (symbol-name name))))
-         (copy-constructor-symbol (name)
-           (intern (concatenate 'string "COPY-" (symbol-name name))))
-         (copy-constructor-ext-symbol (name)
-           (intern (concatenate 'string "COPY-EXT-" (symbol-name name)))))
+  (labels ((to-keyword (sym)
+             (intern (string sym) 'keyword))
+           (combine-symbols (symbols)
+             (intern (format nil "~{~a~}" symbols)))
+           (constructor-symbol (name)
+             (combine-symbols `("MAKE-" ,(symbol-name name))))
+           (copy-constructor-symbol (name)
+             (combine-symbols `("COPY-" ,(symbol-name name))))
+           (copy-constructor-ext-symbol (name)
+             (combine-symbols `("COPY-EXT-" ,(symbol-name name))))
+           (stamped-converter (name)
+             (combine-symbols `(,slot-type "->" ,name))))
     (unless (sb-mop:class-finalized-p (find-class slot-type))
       (sb-mop:finalize-inheritance (find-class slot-type)))
     (unless (sb-mop:class-finalized-p (find-class 'cl-tf2:header))
@@ -109,6 +112,22 @@
            (make-instance ',name
                           :header (or header old-header)
                           ,(to-keyword slot-name) (or ,slot-name old-data))))
+       (defun ,(stamped-converter name)
+           ,(append
+             `(,(intern (symbol-name slot-type)) &key)
+             `,(loop for slot in (sb-mop:class-slots (find-class 'cl-tf2:header))
+                     as slot-symbol = (intern (symbol-name
+                                               (sb-mop:slot-definition-name slot)))
+                     collect slot-symbol))
+         (make-instance
+          ',name
+          ,(to-keyword slot-name) ,(intern (symbol-name slot-type))
+          :header (make-instance
+                   'cl-tf2:header
+                   ,@(loop for slot in (sb-mop:class-slots (find-class 'cl-tf2:header))
+                           as slot-symbol = (intern (symbol-name
+                                                     (sb-mop:slot-definition-name slot)))
+                           append `(,(to-keyword slot-symbol) ,slot-symbol)))))
        (defun ,(copy-constructor-ext-symbol name)
            ,(append
              `(,name &key)
@@ -152,6 +171,7 @@
                                      ,(intern (symbol-name sub-slot-name)))
                                    (,sub-slot-name (,class-slot ,name))))))))))
        (export ',(constructor-symbol name))
+       (export ',(stamped-converter name))
        (export ',(copy-constructor-symbol name))
        (export ',(copy-constructor-ext-symbol name))
        (defmethod print-object ((obj ,name) strm)
