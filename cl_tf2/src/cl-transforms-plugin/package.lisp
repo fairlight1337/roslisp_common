@@ -36,4 +36,6 @@
    ;; point-stamped
    point-stamped make-point-stamped copy-point-stamped point
    ;; pose-stamped
-   pose-stamped pose pose-stamped->msg msg->pose-stamped))
+   pose-stamped pose pose-stamped->msg msg->pose-stamped
+   ;; msg
+   pose->msg msg->pose))
