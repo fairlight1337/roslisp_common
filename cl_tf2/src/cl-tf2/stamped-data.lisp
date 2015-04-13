@@ -114,7 +114,7 @@
                           ,(to-keyword slot-name) (or ,slot-name old-data))))
        (defun ,(stamped-converter name)
            ,(append
-             `(,(intern (symbol-name slot-type)) &key)
+             `(,(intern (symbol-name slot-type)))
              `,(loop for slot in (sb-mop:class-slots (find-class 'cl-tf2:header))
                      as slot-symbol = (intern (symbol-name
                                                (sb-mop:slot-definition-name slot)))
