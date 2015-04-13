@@ -42,4 +42,5 @@
    ;; (copy) constructors
    make-pose-stamped
    copy-pose-stamped
-   copy-ext-pose-stamped))
+   copy-ext-pose-stamped
+   pose))
