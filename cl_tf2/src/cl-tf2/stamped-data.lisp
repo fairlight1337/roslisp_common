@@ -151,9 +151,6 @@
                                              "-" p))
                                      ,(intern (symbol-name sub-slot-name)))
                                    (,sub-slot-name (,class-slot ,name))))))))))
-       (export ',(constructor-symbol name))
-       (export ',(copy-constructor-symbol name))
-       (export ',(copy-constructor-ext-symbol name))
        (defmethod print-object ((obj ,name) strm)
          (print-unreadable-object (obj strm :type t)
            (with-slots (header ,slot-name) obj

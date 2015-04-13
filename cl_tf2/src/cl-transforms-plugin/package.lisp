@@ -38,4 +38,8 @@
    ;; pose-stamped
    pose-stamped pose pose-stamped->msg msg->pose-stamped
    ;; msg
-   pose->msg msg->pose))
+   pose->msg msg->pose
+   ;; (copy) constructors
+   make-pose-stamped
+   copy-pose-stamped
+   copy-ext-pose-stamped))
