@@ -70,7 +70,6 @@
  This call will:
    - define a class 'number-stamped' with slots 'num-value' and 'header'
    - define a constructor-function 'make-number-stamped'
-   - define a stamped converter 'number->number-stamped'
    - define a function 'copy-number-stamped'
    - define a function 'copy-ext-number-stamped'
    - overload the method 'print-object' for 'number-stamped'
