@@ -107,7 +107,7 @@
   (make-msg 
    "geometry_msgs/Transform"
    :translation (3d-vector->msg (cl-transforms:translation transform))
-   :rotation (quaterion->msg (cl-transforms:rotation transform))))
+   :rotation (quaternion->msg (cl-transforms:rotation transform))))
 
 (defun pose->msg (pose)
   (declare (type cl-transforms:pose pose))
