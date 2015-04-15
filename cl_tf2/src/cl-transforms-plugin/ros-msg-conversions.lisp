@@ -137,3 +137,19 @@
             :x (cl-transforms:x point)
             :y (cl-transforms:y point)
             :z (cl-transforms:z point)))
+
+(defun pose-stamped->point-stamped-msg (pose-stamped)
+  (declare (type pose-stamped pose-stamped))
+  (make-message
+   "geometry_msgs/PointStamped"
+   (stamp header) (cl-tf2:get-time-stamp pose-stamped)
+   (frame_id header) (cl-tf2:get-frame-id pose-stamped)
+   (x point) (cl-transforms:x
+              (cl-transforms:origin
+               (cl-transforms-plugin:pose pose-stamped)))
+   (y point) (cl-transforms:y
+              (cl-transforms:origin
+               (cl-transforms-plugin:pose pose-stamped)))
+   (z point) (cl-transforms:z
+              (cl-transforms:origin
+               (cl-transforms-plugin:pose pose-stamped)))))
