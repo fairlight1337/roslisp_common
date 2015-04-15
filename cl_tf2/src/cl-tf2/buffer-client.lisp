@@ -98,6 +98,13 @@
  returns the resulting string. NOTE: For internal use only."
   (string-trim "/" frame))
 
+(defun ensure-fully-qualified-name (frame-id &optional (tf-prefix "/"))
+  "Makes sure that the first character in `frame-id' is set to `tf-prefix'"
+  (declare (type string frame-id tf-prefix))
+  (if (eql (elt frame-id 0) #\/)
+      frame-id
+      (concatenate 'string tf-prefix frame-id)))
+
 (defun process-result (client)
  "Process the result returned to 'client' from the buffer-server. Either raises an
  appropriate error or returns the transform stamped. NOTE: For internal use only."

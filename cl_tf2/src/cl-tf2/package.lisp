@@ -48,4 +48,6 @@
    header frame-id stamp make-header def-stamped
    ;; errors
    tf2-buffer-client-error tf2-lookup-error tf2-connectivity-error tf2-extrapolation-error
-   tf2-invalid-argument-error tf2-timeout-error tf2-transform-error))
+   tf2-invalid-argument-error tf2-timeout-error tf2-transform-error
+   ;; utility
+   unslash-frame ensure-fully-qualified-name))
