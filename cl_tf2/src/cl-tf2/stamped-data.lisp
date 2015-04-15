@@ -99,19 +99,29 @@
                             :accessor ,slot-name :initform ,initform)
                `(,slot-name :initarg ,(to-keyword slot-name) :type ,slot-type
                             :accessor ,slot-name))))
-       (defun ,(constructor-symbol name) (,slot-name frame-id stamp)
-         (make-instance
-          ',name ,(to-keyword slot-name) ,slot-name
-          :header (cl-tf2:make-header frame-id stamp)))
-       (defun ,(copy-constructor-symbol name) (,name &key header ,slot-name)
-         (declare (type ,name ,name))
-         (with-slots ((old-header header) (old-data ,slot-name)) ,name
-           (make-instance ',name
-                          :header (or header old-header)
-                          ,(to-keyword slot-name) (or ,slot-name old-data))))
-       (defun ,(copy-constructor-ext-symbol name)
+       (defgeneric ,(constructor-symbol name) (,slot-name frame-id stamp)
+         (:method (,slot-name frame-id stamp)
+           (make-instance
+            ',name ,(to-keyword slot-name) ,slot-name
+            :header (cl-tf2:make-header frame-id stamp))))
+       (defgeneric ,(copy-constructor-symbol name) (,name &key header ,slot-name)
+         (:method ((,name ,name) &key header ,slot-name)
+           (with-slots ((old-header header) (old-data ,slot-name)) ,name
+             (make-instance ',name
+                            :header (or header old-header)
+                            ,(to-keyword slot-name) (or ,slot-name old-data)))))
+       (defgeneric ,(copy-constructor-ext-symbol name)
            ,(append
              `(,name &key)
+             `,(loop for slot in (append
+                                  (sb-mop:class-slots (find-class slot-type))
+                                  (sb-mop:class-slots (find-class 'cl-tf2:header)))
+                     as slot-symbol = (intern (symbol-name
+                                               (sb-mop:slot-definition-name slot)))
+                     collect slot-symbol))
+         (:method
+           ,(append
+             `((,name ,name) &key)
              `,(loop for slot in (append
                                   (sb-mop:class-slots (find-class slot-type))
                                   (sb-mop:class-slots (find-class 'cl-tf2:header)))
@@ -120,37 +130,36 @@
                      collect `(,slot-symbol
                                nil
                                ,(combine-symbols `(,slot-symbol "-" p)))))
-         ,(concatenate
-           'string
-           "Copies the object given as `" (write-to-string name) "' "
-           "and exposes all of its slots' sub-slots as key parameters. Parameters that are omitted are defaulting to the values in `"
-           (write-to-string name) "'.")
-         (declare (type ,name ,name))
-         (declare
-          ,@(loop for slot in (append (sb-mop:class-slots
-                                       (find-class slot-type))
-                                      (sb-mop:class-slots
-                                       (find-class 'cl-tf2:header)))
-                  collect `(type (or symbol ,(sb-mop:slot-definition-type slot))
-                                 ,(intern (symbol-name
-                                           (sb-mop:slot-definition-name slot))))))
-         (make-instance
-          ',name
-          ,@(loop for (class-slot class) in `((,slot-name ,slot-type)
-                                              (cl-tf2:header cl-tf2:header))
-                  append
-                  `(,(to-keyword class-slot)
-                    (make-instance
-                     ',class
-                     ,@(loop for slot in (sb-mop:class-slots (find-class class))
-                             as sub-slot-name = (sb-mop:slot-definition-name slot)
-                             append
-                             `(,(to-keyword sub-slot-name)
-                               (or (when ,(combine-symbols
-                                           `(,(intern (symbol-name sub-slot-name))
-                                             "-" p))
-                                     ,(intern (symbol-name sub-slot-name)))
-                                   (,sub-slot-name (,class-slot ,name))))))))))
+           ,(concatenate
+             'string
+             "Copies the object given as `" (write-to-string name) "' "
+             "and exposes all of its slots' sub-slots as key parameters. Parameters that are omitted are defaulting to the values in `"
+             (write-to-string name) "'.")
+           (declare
+            ,@(loop for slot in (append (sb-mop:class-slots
+                                         (find-class slot-type))
+                                        (sb-mop:class-slots
+                                         (find-class 'cl-tf2:header)))
+                    collect `(type (or symbol ,(sb-mop:slot-definition-type slot))
+                                   ,(intern (symbol-name
+                                             (sb-mop:slot-definition-name slot))))))
+           (make-instance
+            ',name
+            ,@(loop for (class-slot class) in `((,slot-name ,slot-type)
+                                                (cl-tf2:header cl-tf2:header))
+                    append
+                    `(,(to-keyword class-slot)
+                      (make-instance
+                       ',class
+                       ,@(loop for slot in (sb-mop:class-slots (find-class class))
+                               as sub-slot-name = (sb-mop:slot-definition-name slot)
+                               append
+                               `(,(to-keyword sub-slot-name)
+                                 (or (when ,(combine-symbols
+                                             `(,(intern (symbol-name sub-slot-name))
+                                               "-" p))
+                                       ,(intern (symbol-name sub-slot-name)))
+                                     (,sub-slot-name (,class-slot ,name)))))))))))
        (defmethod print-object ((obj ,name) strm)
          (print-unreadable-object (obj strm :type t)
            (with-slots (header ,slot-name) obj
