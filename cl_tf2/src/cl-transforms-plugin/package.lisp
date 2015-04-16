@@ -40,6 +40,7 @@
    ;; msg
    pose->msg msg->pose
    pose-stamped->point-stamped-msg
+   transform-stamped->msg msg->transform-stamped
    ;; (copy) constructors
    make-pose-stamped
    copy-pose-stamped
