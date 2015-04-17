@@ -99,13 +99,30 @@
                             :accessor ,slot-name :initform ,initform)
                `(,slot-name :initarg ,(to-keyword slot-name) :type ,slot-type
                             :accessor ,slot-name))))
-       (defgeneric ,(constructor-symbol name) (,slot-name frame-id stamp)
-         (:method (,slot-name frame-id stamp)
+       (defgeneric ,(constructor-symbol name)
+           ,`(,slot-name ,@(loop for slot in (sb-mop:class-slots (find-class 'cl-tf2:header))
+                                 as slot-symbol = (intern (symbol-name
+                                                           (sb-mop:slot-definition-name slot)))
+                                 collect slot-symbol))
+         (:method
+             ,(append
+               `(,slot-name)
+               `,(loop for slot in (append
+                                    (sb-mop:class-slots (find-class 'cl-tf2:header)))
+                       as slot-symbol = (intern (symbol-name
+                                                 (sb-mop:slot-definition-name slot)))
+                       as slot-type = (sb-mop:slot-definition-type slot)
+                       collect `(,slot-symbol ,slot-type)))
            (make-instance
             ',name ,(to-keyword slot-name) ,slot-name
-            :header (cl-tf2:make-header frame-id stamp))))
+            :header (cl-tf2:make-header
+                     ,@(loop for slot in (append
+                                          (sb-mop:class-slots (find-class 'cl-tf2:header)))
+                             as slot-symbol = (intern (symbol-name
+                                                       (sb-mop:slot-definition-name slot)))
+                             collect slot-symbol)))))
        (defgeneric ,(copy-constructor-symbol name) (,name &key header ,slot-name)
-         (:method ((,name ,name) &key header ,slot-name)
+         (:method ((,name ,name) &key (header 'cl-tf2:header) (,slot-name ',slot-type))
            (with-slots ((old-header header) (old-data ,slot-name)) ,name
              (make-instance ',name
                             :header (or header old-header)
@@ -140,7 +157,7 @@
                                          (find-class slot-type))
                                         (sb-mop:class-slots
                                          (find-class 'cl-tf2:header)))
-                    collect `(type (or symbol ,(sb-mop:slot-definition-type slot))
+                    collect `(type ,(sb-mop:slot-definition-type slot)
                                    ,(intern (symbol-name
                                              (sb-mop:slot-definition-name slot))))))
            (make-instance
