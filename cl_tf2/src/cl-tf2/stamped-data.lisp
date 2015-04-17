@@ -157,7 +157,7 @@
                                          (find-class slot-type))
                                         (sb-mop:class-slots
                                          (find-class 'cl-tf2:header)))
-                    collect `(type ,(sb-mop:slot-definition-type slot)
+                    collect `(type (or null ,(sb-mop:slot-definition-type slot))
                                    ,(intern (symbol-name
                                              (sb-mop:slot-definition-name slot))))))
            (make-instance
