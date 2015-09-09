@@ -35,37 +35,69 @@
 
 (defun ensure-pose-stamped-transformed (tf pose-stamped target-frame
                                         &key use-current-ros-time)
-  (let ((transform (ensure-transform-available
-                    tf (tf-types:frame-id pose-stamped) target-frame
-                    :time (unless use-current-ros-time (tf-types:stamp pose-stamped)))))
-    (tf-types:pose->pose-stamped
-     target-frame (tf-types:stamp transform)
-     (cl-transforms:transform-pose transform pose-stamped))))
+  (progn
+    (cpl:with-failure-handling
+        ((cl-tf:tf-cache-error (f)
+           (declare (ignore f))
+           (cpl:retry)))
+      (let ((time (cond (use-current-ros-time
+                         (roslisp:ros-time))
+                        (t 0))))
+        (loop until (cl-tf:wait-for-transform tf
+                                              :source-frame (tf:frame-id pose-stamped)
+                                              :target-frame target-frame
+                                              :time time
+                                              :timeout 1.0)
+              do (setf time (cond (use-current-ros-time
+                                   (roslisp:ros-time))
+                                  (t 0))))
+        (cl-tf:transform-pose tf
+                              :pose (tf:copy-pose-stamped
+                                     pose-stamped
+                                     :stamp time)
+                              :target-frame target-frame)))))
+  ;; (let ((transform (ensure-transform-available
+  ;;                   tf (tf-types:frame-id pose-stamped) target-frame
+  ;;                   :time (unless use-current-ros-time (tf-types:stamp pose-stamped)))))
+  ;;   (tf-types:pose->pose-stamped
+  ;;    target-frame (tf-types:stamp transform)
+  ;;    (cl-transforms:transform-pose transform pose-stamped))))
 
 (defun ensure-transform-available (tf reference-frame target-frame
                                    &key time)
-  "Tries to find a valid transformation between the frames
-`reference-frame' and `target-frame' until one is available. The
-parameter `tf' must be a valid instance of type
-`cl-tf2:buffer-client'. Returns the found transformation."
-  (let ((target-frame (unslash-frame target-frame))
-        (reference-frame (unslash-frame reference-frame))
-        (first-run t))
-    (loop for sleepiness = (or first-run (sleep 1.0))
-          as rostime = (cond (time time)
-                             (t (roslisp:ros-time)))
-          for can-tr = (let ((can-tr (cl-tf2:can-transform
-                                      tf
-                                      target-frame
-                                      reference-frame
-                                      rostime 2.0)))
-                         (when can-tr
-                           (tf-types:transform->stamped-transform
-                            reference-frame
-                            target-frame
-                            rostime
-                            (cl-tf2::transform can-tr))))
-          when (progn
-                 (setf first-run nil)
-                 can-tr)
-            do (return can-tr))))
+  (progn
+    (loop until (cl-tf:wait-for-transform tf
+                                          :source-frame reference-frame
+                                          :target-frame target-frame
+                                          :time 0
+                                          :timeout 1.0))
+    (cl-tf:lookup-transform tf
+                            :source-frame reference-frame
+                            :target-frame target-frame
+                            :time 0)))
+;;   "Tries to find a valid transformation between the frames
+;; `reference-frame' and `target-frame' until one is available. The
+;; parameter `tf' must be a valid instance of type
+;; `cl-tf2:buffer-client'. Returns the found transformation."
+;;   (let ((target-frame (unslash-frame target-frame))
+;;         (reference-frame (unslash-frame reference-frame))
+;;         (first-run t))
+;;     (loop for sleepiness = (or first-run (sleep 1.0))
+;;           as rostime = (cond (time time)
+;;                              (t (roslisp:ros-time)))
+;;           for can-tr = (let ((can-tr
+;;                                (cl-tf2:can-transform
+;;                                 tf
+;;                                 target-frame
+;;                                 reference-frame
+;;                                 rostime 2.0)))
+;;                          (when can-tr
+;;                            (tf-types:transform->stamped-transform
+;;                             reference-frame
+;;                             target-frame
+;;                             rostime
+;;                             (cl-tf2::transform can-tr))))
+;;           when (progn
+;;                  (setf first-run nil)
+;;                  can-tr)
+;;             do (return can-tr))))
